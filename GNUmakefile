@@ -4,7 +4,7 @@ MAKEFLAGS += -rR
 
 # This is the name that our final executable will have.
 # Change as needed.
-override OUTPUT := myos
+override OUTPUT := potatos
 
 # User controllable toolchain and toolchain prefix.
 TOOLCHAIN :=
