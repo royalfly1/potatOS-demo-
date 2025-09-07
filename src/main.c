@@ -2,6 +2,7 @@
 #include <stddef.h>
 #include <stdbool.h>
 #include <limine.h>
+#include <font8x8_basic.h>
 
 // Set the base revision to 3, this is recommended as this is the latest
 // base revision described by the Limine boot protocol specification.
@@ -94,6 +95,42 @@ static void hcf(void) {
     }
 }
 
+void draw_char(uint32_t *fb_ptr, size_t width,
+               size_t x0, size_t y0, const uint8_t *glyph,
+               uint32_t color, int scale)
+{
+    for (int y = 0; y < 8; y++) {
+        uint8_t row = glyph[y];
+        for (int x = 0; x < 8; x++) {
+            if (row & (1 << x)) {
+                for (int dy = 0; dy < scale; dy++) {
+                    for (int dx = 0; dx < scale; dx++) {
+                        fb_ptr[(y0 + y * scale + dy) * width + (x0 + x * scale + dx)] = color;
+                    }
+                }
+            }
+        }
+    }
+}
+
+
+void draw_string(uint32_t *fb_ptr, size_t width, size_t x, size_t y,
+                 const char *str, uint32_t color,
+                 const uint8_t font[128][8], int scale)
+{
+    while (*str) {
+        unsigned char ch = (unsigned char)*str;
+        if (ch < 128) {
+            draw_char(fb_ptr, width, x, y, font[ch], color, scale);
+        }
+        x += 8 * scale;
+        str++;
+    }
+}
+
+
+
+
 // The following will be our kernel's entry point.
 // If renaming kmain() to something else, make sure to change the
 // linker script accordingly.
@@ -112,20 +149,13 @@ void kmain(void) {
     // Fetch the first framebuffer.
     struct limine_framebuffer *framebuffer = framebuffer_request.response->framebuffers[0];
 
-    size_t x0 = (framebuffer->width - 400) / 2;
-	size_t y0 = (framebuffer->height - 400) / 2;
-	size_t size = 400;
+	extern const uint8_t font8x8_basic[128][8];
 
-	volatile uint32_t *fb_ptr = framebuffer->address;
 	size_t width = framebuffer->pitch / 4;
+	uint32_t *fb_ptr = framebuffer->address;
 
-	for (size_t y = 0; y < size; y++) {
-		for (size_t x = 0; x < size; x++) {
-		    fb_ptr[(y0 + y) * width + (x0 + x)] = 0xF0DB7F;
-		}
-	}
-
-
+	draw_string(fb_ptr, width, 25, 25, "Is that the byte of 87?", 0xFFFFFF, font8x8_basic, 3);
+	
 
     // We're done, just hang...
     hcf();
