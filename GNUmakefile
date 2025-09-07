@@ -1,5 +1,4 @@
-# Nuke built-in rules and variables.
-MAKEFLAGS += -rR
+# Nuke built-in rules.
 .SUFFIXES:
 
 # This is the name that our final executable will have.
@@ -38,7 +37,7 @@ CFLAGS := -g -O2 -pipe
 CPPFLAGS :=
 
 # User controllable nasm flags.
-NASMFLAGS := -F dwarf -g
+NASMFLAGS := -g
 
 # User controllable linker flags. We set none by default.
 LDFLAGS :=
@@ -62,8 +61,11 @@ override CFLAGS += \
     -fno-stack-check \
     -fno-lto \
     -fno-PIC \
+    -ffunction-sections \
+    -fdata-sections \
     -m64 \
     -march=x86-64 \
+    -mabi=sysv \
     -mno-80387 \
     -mno-mmx \
     -mno-sse \
@@ -82,7 +84,7 @@ override CPPFLAGS := \
 # Internal nasm flags that should not be changed by the user.
 override NASMFLAGS := \
     -f elf64 \
-    $(NASMFLAGS) \
+    $(patsubst -g,-g -F dwarf,$(NASMFLAGS)) \
     -Wall
 
 # Internal linker flags that should not be changed by the user.
@@ -91,6 +93,7 @@ override LDFLAGS += \
     -nostdlib \
     -static \
     -z max-page-size=0x1000 \
+    --gc-sections \
     -T linker.lds
 
 # Use "find" to glob all *.c, *.S, and *.asm files in the tree and obtain the
@@ -111,25 +114,25 @@ all: bin/$(OUTPUT)
 
 # Link rules for the final executable.
 bin/$(OUTPUT): GNUmakefile linker.lds $(OBJ)
-	mkdir -p "$$(dirname $@)"
-	$(LD) $(OBJ) $(LDFLAGS) -o $@
+	mkdir -p "$(dir $@)"
+	$(LD) $(LDFLAGS) $(OBJ) -o $@
 
 # Compilation rules for *.c files.
 obj/%.c.o: %.c GNUmakefile
-	mkdir -p "$$(dirname $@)"
+	mkdir -p "$(dir $@)"
 	$(CC) $(CFLAGS) $(CPPFLAGS) -c $< -o $@
 
 # Compilation rules for *.S files.
 obj/%.S.o: %.S GNUmakefile
-	mkdir -p "$$(dirname $@)"
+	mkdir -p "$(dir $@)"
 	$(CC) $(CFLAGS) $(CPPFLAGS) -c $< -o $@
 
 # Compilation rules for *.asm (nasm) files.
 obj/%.asm.o: %.asm GNUmakefile
-	mkdir -p "$$(dirname $@)"
+	mkdir -p "$(dir $@)"
 	nasm $(NASMFLAGS) $< -o $@
 
 # Remove object files and the final executable.
 .PHONY: clean
 clean:
-	rm -rf bin obj
+	rm -rf bin obj iso_root limine

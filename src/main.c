@@ -112,11 +112,20 @@ void kmain(void) {
     // Fetch the first framebuffer.
     struct limine_framebuffer *framebuffer = framebuffer_request.response->framebuffers[0];
 
-    // Note: we assume the framebuffer model is RGB with 32-bit pixels.
-    for (size_t i = 0; i < 100; i++) {
-        volatile uint32_t *fb_ptr = framebuffer->address;
-        fb_ptr[i * (framebuffer->pitch / 4) + i] = 0xffffff;
-    }
+    size_t x0 = (framebuffer->width - 400) / 2;
+	size_t y0 = (framebuffer->height - 400) / 2;
+	size_t size = 400;
+
+	volatile uint32_t *fb_ptr = framebuffer->address;
+	size_t width = framebuffer->pitch / 4;
+
+	for (size_t y = 0; y < size; y++) {
+		for (size_t x = 0; x < size; x++) {
+		    fb_ptr[(y0 + y) * width + (x0 + x)] = 0xF0DB7F;
+		}
+	}
+
+
 
     // We're done, just hang...
     hcf();
